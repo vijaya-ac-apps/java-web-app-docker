@@ -1,0 +1,44 @@
+pipeline{
+    agent any
+    
+    tools{
+        maven "maven3.6.2"
+    }
+    options{
+        timestamps()
+    }
+    stages{
+        stage('pull code'){
+            steps{
+                git credentialsId: '7b964a91-e119-4d72-b1cd-463a4e16b1fd', url: 'https://github.com/vijaya-ac-apps/java-web-app-docker.git'
+     }
+        }
+        stage('Build'){
+            steps{
+                sh "mvn clean package"
+            }
+        }
+        stage('build image'){
+            steps{
+                sh "docker build -t dockerhudsons/java-web-app-docker:1 ."
+            }
+        }
+         stage('docker login and push'){
+            steps{
+            sh "docker login -u dockerhudsons -p VijayaLikki123"
+            sh "docker push -a dockerhudsons/java-web-app-docker"
+        }
+        }
+
+        stage('deploy application as container in docker server'){
+            steps{
+            sshagent(['dock_dev_server_ssh']) {
+            sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.41.156 docker rm -f javawebappcontainer || true"
+            sh "ssh -o StrictHostKeyChecking=no ubuntu@172.31.41.156 docker run -d -p 8080:8080 --name javawebappcontainer dockerhudsons/java-web-app-docker:1"
+} 
+               }
+        }
+        
+        }
+}
+    
